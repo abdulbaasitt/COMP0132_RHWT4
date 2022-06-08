@@ -23,7 +23,7 @@ RM::RM(ros::NodeHandle &nh) : g_cloud_ptr(new PointC),		// input point cloud
 	pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/road_markings_points", 1, true);
 
 	// Create a ROS subscriber for the input point cloud
-	sub_ = nh_.subscribe("/points_input", 1, &RM::callback, this);
+	sub_ = nh_.subscribe("/filtered_points", 1, &RM::callback, this);
 }
 
 void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
@@ -35,16 +35,13 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 
 	unsigned int THRESHOLD;
 	// THRESHOLD = OTSU(cloud_msg1);
-	THRESHOLD = 140;
+	THRESHOLD = 20;
 
-
-
-
-///djudududududu
+	//1874919424
 
 	ROS_INFO("Threshold: %d", THRESHOLD);
 
-	Filter(cloud, cloud_filtered, THRESHOLD / 2);
+	Filter(cloud, cloud_filtered, THRESHOLD);
 	_velodyne_header = cloud_msg1->header;
 
 	sensor_msgs::PointCloud2 output;
@@ -65,7 +62,8 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 
 	/* 1 Intensity histogram */
 	unsigned int histogramIntensity[65536] = {0};
-	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values //ASK about the reason why maxIntensity is Less than MinIntensity
+	// unsigned int maxIntensity = -999999, minIntensity = 999999; // Maximum and minimum intensity values
+	unsigned int maxIntensity = 0, minIntensity = 999999;
 
 	double corrected_Intensity = 0.0;
 
@@ -171,11 +169,10 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 
 void RM::Filter(PointCPtr &in_cloud_ptr, PointCPtr &out_cloud_ptr, unsigned int THRESHOLD)
 {
-	out_cloud_ptr->points.clear();
 
 	for (PointC::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
 	{
-
+		// out_cloud_ptr->points.push_back(*it);
 		if (it->intensity >= THRESHOLD)
 
 		{
