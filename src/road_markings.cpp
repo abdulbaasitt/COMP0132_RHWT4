@@ -34,7 +34,8 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 	pcl::fromROSMsg(*cloud_msg1, *cloud);
 
 	unsigned int THRESHOLD;
-	THRESHOLD = OTSU(cloud_msg1);
+	// THRESHOLD = OTSU(cloud_msg1);
+	THRESHOLD = 140;
 
 
 
@@ -76,40 +77,57 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 		if (vIntensity != 0)
 		{
 
-			double current_radius = (it->x * it->x) + (it->y * it->y);
+			// double current_radius = (it->x * it->x) + (it->y * it->y);
 
-			double angle = atan2(it->z, sqrt(current_radius));
+			// double angle = atan2(it->z, sqrt(current_radius));
 
-			double ref_intensity = 25;
+			// double ref_intensity = 25;
 
-			double rad_ref = current_radius / ref_intensity;
+			// double rad_ref = current_radius / ref_intensity;
 
-			corrected_Intensity = (vIntensity * rad_ref * ((1.0 / (cos(angle) + 0.0001))));
+			// corrected_Intensity = (vIntensity * rad_ref * ((1.0 / (cos(angle) + 0.0001))));
 
-			if (corrected_Intensity > maxIntensity)
+			// if (corrected_Intensity > maxIntensity)
+			// {
+
+			// 	maxIntensity = corrected_Intensity;
+
+			// 	std::cout << "max Intensity: " << maxIntensity << std::endl;
+
+			// 	max_intensity_list.push_back(to_string(maxIntensity));
+			// }
+			
+			// if (corrected_Intensity < minIntensity)
+			// {
+
+			// 	minIntensity = corrected_Intensity;
+			// }
+
+
+			if ( vIntensity> maxIntensity)
 			{
 
-				maxIntensity = corrected_Intensity;
-
+				maxIntensity = vIntensity;
 
 				std::cout << "max Intensity: " << maxIntensity << std::endl;
 
-				max_intensity_list.push_back(to_string(maxIntensity));
+				// max_intensity_list.push_back(to_string(maxIntensity));
 			}
-			if (corrected_Intensity < minIntensity)
+
+			if (vIntensity < minIntensity)
 			{
 
-				minIntensity = corrected_Intensity;
+				minIntensity = vIntensity;
 			}
 
-			++histogramIntensity[int(corrected_Intensity)];
+			++histogramIntensity[int(vIntensity)];
 		}
 
 	}
 
-	std::ofstream output_file("/home/abdulbaasit/Desktop/example.txt");
-	std::ostream_iterator<std::string> output_iterator(output_file, "\n");
-	std::copy(max_intensity_list.begin(), max_intensity_list.end(), output_iterator);
+	// std::ofstream output_file("/home/abdulbaasit/Desktop/example.txt");
+	// std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+	// std::copy(max_intensity_list.begin(), max_intensity_list.end(), output_iterator);
 
 
 
