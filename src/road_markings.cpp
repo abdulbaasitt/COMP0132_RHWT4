@@ -38,6 +38,9 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 
 
 
+
+///djudududududu
+
 	ROS_INFO("Threshold: %d", THRESHOLD);
 
 	Filter(cloud, cloud_filtered, THRESHOLD / 2);
