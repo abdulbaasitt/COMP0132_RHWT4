@@ -11,7 +11,8 @@ typedef pcl::PointXYZI PointT;
 typedef pcl::PointCloud<PointT> PointC;
 typedef PointC::Ptr PointCPtr;
 
-std::vector<std::string> max_intensity_list;
+std::vector<std::string> max_intensity_list; // list to save the max intensity value in each iteration
+std::vector<std::string> min_intensity_list; // list to save the min intensity value in each iteration
 
 RM::RM(ros::NodeHandle &nh) : g_cloud_ptr(new PointC),		// input point cloud
 							  g_cloud_filtered(new PointC), // filtered point cloud
@@ -34,10 +35,8 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 	pcl::fromROSMsg(*cloud_msg1, *cloud);
 
 	unsigned int THRESHOLD;
-	// THRESHOLD = OTSU(cloud_msg1);
-	THRESHOLD = 20;
-
-	//1874919424
+	THRESHOLD = OTSU(cloud_msg1);
+	// THRESHOLD = 0;
 
 	ROS_INFO("Threshold: %d", THRESHOLD);
 
@@ -107,7 +106,7 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 
 				maxIntensity = vIntensity;
 
-				std::cout << "max Intensity: " << maxIntensity << std::endl;
+				// std::cout << "max Intensity: " << maxIntensity << std::endl;
 
 				// max_intensity_list.push_back(to_string(maxIntensity));
 			}
@@ -116,18 +115,25 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 			{
 
 				minIntensity = vIntensity;
+				// std::cout << "min Intensity: " << minIntensity << std::endl;
+				// min_intensity_list.push_back(to_string(minIntensity));
 			}
 
 			++histogramIntensity[int(vIntensity)];
 		}
 
 	}
-
+	
+	//conversion of max intensity values to txt file
 	// std::ofstream output_file("/home/abdulbaasit/Desktop/example.txt");
 	// std::ostream_iterator<std::string> output_iterator(output_file, "\n");
 	// std::copy(max_intensity_list.begin(), max_intensity_list.end(), output_iterator);
 
 
+	//conversion of min intensity values to txt file
+	// std::ofstream output_file("/home/abdulbaasit/Desktop/min_intensity.txt");
+	// std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+	// std::copy(min_intensity_list.begin(), min_intensity_list.end(), output_iterator);
 
 	double sumIntensity = 0.0;
 	for (int k = minIntensity; k <= maxIntensity; k++)
