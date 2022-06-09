@@ -35,8 +35,8 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 	pcl::fromROSMsg(*cloud_msg1, *cloud);
 
 	unsigned int THRESHOLD;
-	THRESHOLD = OTSU(cloud_msg1);
-	// THRESHOLD = 0;
+	// THRESHOLD = OTSU(cloud_msg1);
+	THRESHOLD = 0;
 
 	ROS_INFO("Threshold: %d", THRESHOLD);
 
