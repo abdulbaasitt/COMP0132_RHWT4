@@ -94,7 +94,7 @@
 
   <!-- hdl_graph_slam_nodelet -->
   <node pkg="nodelet" type="nodelet" name="hdl_graph_slam_nodelet" args="load hdl_graph_slam/HdlGraphSlamNodelet $(arg nodelet_manager)">
-    <remap from="/velodyne_points" to="/filtered_points" />
+    <param name="points_topic" value="$(arg points_topic)" />
     <!-- frame settings -->
     <param name="map_frame_id" value="$(arg map_frame_id)" />
     <param name="odom_frame_id" value="$(arg lidar_odom_frame_id)" />

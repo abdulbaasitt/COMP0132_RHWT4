@@ -37,6 +37,8 @@ class RM
     
     unsigned int OTSU(const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
 
+    unsigned int Modified_OTSU(const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
+
     void Filter (PointCPtr &in_cloud_ptr, PointCPtr &out_cloud_ptr, unsigned int THRESHOLD);
 
     void callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg1);

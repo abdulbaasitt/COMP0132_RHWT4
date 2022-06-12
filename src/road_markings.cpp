@@ -13,6 +13,7 @@ typedef PointC::Ptr PointCPtr;
 
 std::vector<std::string> max_intensity_list; // list to save the max intensity value in each iteration
 std::vector<std::string> min_intensity_list; // list to save the min intensity value in each iteration
+std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
 
 RM::RM(ros::NodeHandle &nh) : g_cloud_ptr(new PointC),		// input point cloud
 							  g_cloud_filtered(new PointC), // filtered point cloud
@@ -36,7 +37,8 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 
 	unsigned int THRESHOLD;
 	// THRESHOLD = OTSU(cloud_msg1);
-	THRESHOLD = 0;
+	THRESHOLD = Modified_OTSU(cloud_msg1);
+	// THRESHOLD = 0;
 
 	ROS_INFO("Threshold: %d", THRESHOLD);
 
@@ -49,6 +51,89 @@ void RM::callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg1)
 	output.header = _velodyne_header;
 	pub_.publish(output);
 
+}
+
+unsigned int
+RM::Modified_OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
+{
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+	pcl::fromROSMsg(*cloud_msg, *cloud);
+	unsigned int thrIntensity = 1;
+
+	/* 1 Intensity histogram */
+	unsigned int histogramIntensity[65536] = {0};
+	// unsigned int maxIntensity = -999999, minIntensity = 999999; // Maximum and minimum intensity values
+	unsigned int maxIntensity = 0, minIntensity = 999999;
+
+	double corrected_Intensity = 0.0;
+
+	// for loop to do measurement about max intensity
+	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
+	{
+		double vIntensity = double(it->intensity);
+
+		if (vIntensity > 25)
+		
+		{
+			continue;
+		}
+
+		else if (vIntensity != 0 && vIntensity <= 25)
+		{
+
+			if ( vIntensity> maxIntensity)
+			{
+				maxIntensity = vIntensity;
+
+			}
+
+			if (vIntensity < minIntensity)
+			{
+				minIntensity = vIntensity;
+
+			}
+
+			++histogramIntensity[int(vIntensity)];
+		}
+
+	}
+	
+	double sumIntensity = 0.0;
+	for (int k = minIntensity; k <= maxIntensity; k++)
+	{
+		sumIntensity += (double)k * (double)histogramIntensity[k];
+	}
+
+	/* 3 traversal calculation */
+	double otsu = -1.0;
+	int w0 = 0;			  // The number of points less than or equal to the current threshold (number of previous scenic spots)
+	double sumFore = 0.0; // Foreground quality moment
+
+	unsigned int pcCount = cloud->size();
+	for (int k = minIntensity; k <= maxIntensity; k++)
+	{
+		w0 += histogramIntensity[k];
+
+		int w1 = pcCount - w0; //(the number of post-sites)
+		if (w0 == 0)
+			continue;
+		if (w1 == 0)
+			break;
+
+		sumFore += (double)k * histogramIntensity[k];
+
+		double u0 = sumFore / w0;									// The average gray level of the foreground
+		double u1 = (sumIntensity - sumFore) / w1;					// The average gray level of the background
+		double g = (double)w0 * (double)w1 * (u0 - u1) * (u0 - u1); // variance between classes
+
+		if (g > otsu)
+		{
+			otsu = g;
+			thrIntensity = k;
+		}
+	}
+
+	return thrIntensity;
 }
 
 /* The returned threshold of intensity is obtained by OTSU. */
@@ -73,6 +158,7 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 
 		if (vIntensity != 0)
 		{
+			all_intensity_list.push_back(to_string(int(vIntensity)));
 
 			// double current_radius = (it->x * it->x) + (it->y * it->y);
 
@@ -134,6 +220,13 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 	// std::ofstream output_file("/home/abdulbaasit/Desktop/min_intensity.txt");
 	// std::ostream_iterator<std::string> output_iterator(output_file, "\n");
 	// std::copy(min_intensity_list.begin(), min_intensity_list.end(), output_iterator);
+
+
+	//conversion of all intensity values to txt file
+	// std::ofstream output_file("/home/abdulbaasit/Desktop/all_Final_intensity.txt");
+	// std::ostream_iterator<std::string> output_iterator(output_file, "\n");
+	// std::copy(all_intensity_list.begin(), all_intensity_list.end(), output_iterator);
+
 
 	double sumIntensity = 0.0;
 	for (int k = minIntensity; k <= maxIntensity; k++)
