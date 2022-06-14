@@ -43,6 +43,7 @@
     <param name="radius_min_neighbors" value="2" />
   </node>
 
+  <!-- Not supposed to be here -->
   <!-- calling the road_markings node to detect intensity -->
   <node pkg="road_markings" type="road_markings" name="road_markings" output = "screen"/>
 
