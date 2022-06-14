@@ -36,7 +36,7 @@ RM::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg1)
 
   unsigned int THRESHOLD;
 //   THRESHOLD = OTSU(cloud_msg1);
-  THRESHOLD = 255;
+  THRESHOLD = 0;
 
   ROS_INFO("Threshold: %d", THRESHOLD);
 
@@ -138,11 +138,12 @@ RM::Filter(PointCPtr &in_cloud_ptr, PointCPtr &out_cloud_ptr, unsigned int THRES
   
   for ( PointC::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
   {
+	int value = it->intensity;
 
     if ( it->intensity >= THRESHOLD) 
 
     {
-		ROS_INFO("TESTIN");
+		// ROS_INFO("VALUE: %d", value);
       out_cloud_ptr->points.push_back(*it);
 	  
     } 
