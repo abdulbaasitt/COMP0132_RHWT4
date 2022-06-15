@@ -8,26 +8,15 @@ project(road_markings)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-roscpp
-rospy
-std_msgs
-pcl_conversions
-pcl_ros
-nav_msgs
-message_filters
-tf2_ros
-tf2_geometry_msgs
-tf2
+  pcl_conversions
+  pcl_ros
+  roscpp
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL REQUIRED)
-find_package(PkgConfig)
-pkg_check_modules(EIGEN3 eigen3 REQUIRED)
-find_package(tf REQUIRED)
-find_package(tf_conversions REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -117,7 +106,7 @@ find_package(tf_conversions REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES road_markings
-CATKIN_DEPENDS roscpp rospy std_msgs nav_msgs message_filters tf2_ros tf2_geometry_msgs tf2 
+#  CATKIN_DEPENDS pcl_conversions pcl_ros roscpp sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -127,23 +116,20 @@ CATKIN_DEPENDS roscpp rospy std_msgs nav_msgs message_filters tf2_ros tf2_geomet
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include
-${catkin_INCLUDE_DIRS}
-${PCL_INCLUDE_DIRS})
-
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/road_markings.cpp
 # )
-add_library(road_markings_lib src/road_markings.cpp)
-
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(road_markings_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

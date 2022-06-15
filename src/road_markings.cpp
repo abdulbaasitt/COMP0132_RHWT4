@@ -1,81 +1,36 @@
-#include <road_markings/road_markings.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include "std_msgs/String.h"
+#include <cmath>
+#include <stdlib.h>
 
+#include <sensor_msgs/NavSatFix.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/convert.h>
+#include <std_msgs/Time.h>
+#include <nav_msgs/Odometry.h>
+#include <string>
+#include <pcl_ros/point_cloud.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-// Type defs
-typedef pcl::PointXYZI PointT;
-typedef pcl::PointCloud<PointT> PointC;
-typedef PointC::Ptr PointCPtr;
+std_msgs::Header _velodyne_header;
 
-
-
-RM::RM (ros::NodeHandle &nh):
-  g_cloud_ptr (new PointC), // input point cloud
-  g_cloud_filtered (new PointC), // filtered point cloud
-  debug_ (false)
+unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
-  nh_ = nh;
-
-  // Create a ROS publisher for the output point cloud
-  pub_ = nh_.advertise<sensor_msgs::PointCloud2> ("/road_markings_points", 1, true);
-
-
-  // Create a ROS subscriber for the input point cloud
-  sub_ = nh_.subscribe("/points_input", 1, &RM::callback, this);
-
-
-}
-
-
-void
-RM::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg1)
-{
-  PointCPtr cloud(new PointC);
-  PointCPtr cloud_filtered(new PointC);
-
-  pcl::fromROSMsg(*cloud_msg1, *cloud);
-
-  unsigned int THRESHOLD;
-//   THRESHOLD = OTSU(cloud_msg1);
-  THRESHOLD = 0;
-
-  ROS_INFO("Threshold: %d", THRESHOLD);
-
-  Filter(cloud, cloud_filtered, THRESHOLD);
-  _velodyne_header = cloud_msg1->header;
-
-  sensor_msgs::PointCloud2 output;
-  
-  pcl::toROSMsg(*cloud_filtered, output);
-  output.header = _velodyne_header;
-  pub_.publish (output);
-}
-
-/* The returned threshold of intensity is obtained by OTSU. */
-unsigned int
-RM::OTSU(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
-{
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::fromROSMsg(*cloud_msg, *cloud);
-  unsigned int thrIntensity = 1;
+	unsigned int thrIntensity = 1;
  
 	/* 1 Intensity histogram */
 	unsigned int histogramIntensity[65536] = { 0 };
-  unsigned int maxIntensity = 0, minIntensity = 666666;   //Maximum and minimum intensity values //ASK about the reason why maxIntensity is Less than MinIntensity
+	 unsigned int maxIntensity = 0, minIntensity = 666666;//Maximum and minimum intensity values
 	
-  //for loop to do measurement about max intensity
-  for ( pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
+for ( pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
 	{
+		// correct intensity to find corrected threshold
+		
 		unsigned int vIntensity = it->intensity;
-		float  x = it->x;
-		float  y = it->y;
-		float  z = it ->z;
-		float  current_radius = pow(x, 2) + pow(y,2);
-
-		float angle = atan2(z, sqrt(current_radius));
-
-		unsigned int corrected_intensity = vIntensity * (current_radius ) * (1/cos(angle));
-
-
 		if (vIntensity > maxIntensity)
 		{
 			maxIntensity = vIntensity;
@@ -86,8 +41,8 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 		}
 		++histogramIntensity[vIntensity];
 	}
-
-
+ 
+	 /* 2 total mass moment + = strength * points */
 	double sumIntensity = 0.0;
 	for (int k = minIntensity; k <= maxIntensity; k++)
 	{
@@ -125,50 +80,85 @@ RM::OTSU(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
  
 	return thrIntensity;
 }
-
-
-
-
-
-void
-RM::Filter(PointCPtr &in_cloud_ptr, PointCPtr &out_cloud_ptr, unsigned int THRESHOLD)
+/////////////////////
+void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr)
+{   double modified_intensity; 
+		        
+  out_cloud_ptr->points.clear();
+  
+  for ( pcl::PointCloud<pcl::PointXYZI>::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
+  {
+    modified_intensity = (it->intensity) * ( (it->x)*(it->x) + (it->y)*(it->y) ) *sqrt(4.0 + (it->x)*(it->x))/ (100.0 * abs(it->x) );
+    
+    if(1) 
+    {
+    	 it->intensity = modified_intensity;
+       out_cloud_ptr->points.push_back(*it);
+    } 
+  } 
+}
+///////////////////////
+void Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr, unsigned int THRESHOLD)
 {
   out_cloud_ptr->points.clear();
-
   
-  for ( PointC::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
+  for ( pcl::PointCloud<pcl::PointXYZI>::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
   {
-	int value = it->intensity;
-
-    if ( it->intensity >= THRESHOLD) 
-
+    
+    if (( it->intensity > THRESHOLD ) && ( it->x > 0) )
     {
-		// ROS_INFO("VALUE: %d", value);
-      out_cloud_ptr->points.push_back(*it);
-	  
+    	 out_cloud_ptr->points.push_back(*it);
     } 
+  } 
+}
+class SubscribeAndPublish
+{
+public:
+  SubscribeAndPublish()
+  {
+// Create a ROS subscriber for the input point cloud
+  sub = nh.subscribe ("/points_input", 1, &SubscribeAndPublish::callback, this);
 
+  // Create a ROS publisher for the output point cloud
+  pub = nh.advertise<sensor_msgs::PointCloud2> ("/road_markings_points", 1);
+  }
+ /////////////////// 
+  void callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg) 
+{
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corrected(new pcl::PointCloud<pcl::PointXYZI>);
+
+  pcl::fromROSMsg(*cloud_msg, *cloud);
+  //Correct_Intensity(cloud, cloud_corrected);
+
+  unsigned int THRESHOLD;
+  THRESHOLD = OTSU(cloud);
+  ROS_INFO("Threshold: %d", THRESHOLD);
+
+  Filter(cloud, cloud_filtered, 2* THRESHOLD);
+_velodyne_header = cloud_msg->header;
+    
+   // Convert to ROS data type
+   sensor_msgs::PointCloud2 output;
+   
+   pcl::toROSMsg(*cloud_filtered, output);
+   output.header = _velodyne_header;
+
+    // Publish the data
+    pub.publish (output);
   }
 
-}
+private:
+  ros::NodeHandle nh; 
+  ros::Publisher pub;
+  ros::Subscriber sub;
+};
 
-
-
-int
-main (int argc, char** argv)
+int main (int argc, char** argv)
 {
-
-
   ros::init (argc, argv, "road_markings");
-
-
-  ros::NodeHandle nh ("~");
-
-  RM SCLObject (nh);
-  
-   
+  SubscribeAndPublish SAPObject;
   ros::spin ();
-  
-  return (0);
-
-} 
+  return 0;
+}
