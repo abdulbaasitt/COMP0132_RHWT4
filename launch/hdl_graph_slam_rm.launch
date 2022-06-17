@@ -29,6 +29,7 @@
     <param name="base_link_frame" value="base_link" />
     <!-- distance filter -->
     <param name="use_distance_filter" value="true" />
+    <!-- new change from default distance near thresh was 0.1 and far_thresh was 100 -->
     <param name="distance_near_thresh" value="3.10" />
     <param name="distance_far_thresh" value="50.0" />
     <!-- NONE, VOXELGRID, or APPROX_VOXELGRID -->
@@ -95,7 +96,8 @@
   <!-- hdl_graph_slam_nodelet -->
   <node pkg="nodelet" type="nodelet" name="hdl_graph_slam_nodelet" args="load hdl_graph_slam/HdlGraphSlamNodelet $(arg nodelet_manager)">
     <param name="points_topic" value="$(arg points_topic)" />
-    <remap from="/gpsimu_driver/imu_data" to="$(arg imu_topic)" />  
+    <remap from="/gpsimu_driver/imu_data" to="$(arg imu_topic)" />
+     <!--FIND out where the fix topic is coming from  -->
     <remap from="/gps/navsat"  to="/fix" />
     
     <!-- just make input of 3d with floor of road markings   -->
