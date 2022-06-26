@@ -18,15 +18,16 @@
 
 #include <algorithm>
 #include <typeinfo>
-
-
+#include <fstream>
+#include <iterator>
+#include <string>
+#include <vector>
 
 std_msgs::Header _velodyne_header;
 
-// int arg_max(std::vector const& vec) {
-//   return (int)(std::distance(vec.begin(), max_element(vec.begin(), vec.end())));
-// }
+double sepMeasure;
 
+std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
 
 unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
@@ -42,10 +43,9 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	{
 		// correct intensity to find corrected threshold
 
-	
+		double modified_intensity = (it->intensity) * ((it->x) * (it->x) + (it->y) * (it->y)) * sqrt(4.0 + (it->x) * (it->x)) / (100.0 * abs(it->x));
 
 		unsigned int vIntensity = it->intensity;
-
 
 		if (vIntensity > maxIntensity)
 		{
@@ -58,13 +58,14 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 		++histogramIntensity[vIntensity];
 	}
 
+	unsigned int pcCount = cloud->size();
 
 	double cumSum = 0.0;
 	double cumSumArray[maxIntensity] = {0};
 
 	for (int k = 0; k <= maxIntensity; k++)
 	{
-		cumSum += (double)histogramIntensity[k];
+		cumSum += (double)histogramIntensity[k]; // 	/pcCount;
 		cumSumArray[k] = double(cumSum);
 	}
 
@@ -72,26 +73,26 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	double cumMeanArray[maxIntensity] = {0};
 	for (int k = 0; k <= maxIntensity; k++)
 	{
-		cumMean += (double)k * (double)histogramIntensity[k];
+		cumMean += (double)k * ((double)histogramIntensity[k]); // 	/pcCount);
 		cumMeanArray[k] = double(cumMean);
 	}
 
 	double globalMean = 0.0;
-	double globalMeanArray[256]= {0};
+	double globalMeanArray[256] = {0};
 
 	for (int k = 0; k <= 255; k++)
 	{
-		globalMean += (double)k * (double)histogramIntensity[k];
-		globalMeanArray[k]= double(globalMean);
+		globalMean += (double)k * ((double)histogramIntensity[k]); // /pcCount);
+		globalMeanArray[k] = double(globalMean);
 	}
 
 	double globalVar = 0.0;
-	double globalVarArray [256] = {0};
+	double globalVarArray[256] = {0};
 
 	for (int k = 0; k <= 255; k++)
 	{
-		globalVar += (((double)k - globalMean) * ((double)k - globalMean) * (double)histogramIntensity[k]);
-		globalVarArray[k]= double(globalVar);
+		globalVar += (((double)k - globalMean) * ((double)k - globalMean) * ((double)histogramIntensity[k])); // /pcCount));
+		globalVarArray[k] = double(globalVar);
 	}
 
 	double localVariance = 0.0;
@@ -99,81 +100,35 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 
 	for (int k = 0; k <= maxIntensity; k++)
 	{
-		int divisor = (  histogramIntensity[k]  * ( 1 - histogramIntensity[k] )  );
 
-		if (  divisor == 0 ){
+		int divisor = (histogramIntensity[k] * (1 - histogramIntensity[k]));
+		// int divisor = (  cumSumArray[k]  * ( 1 - cumSumArray[k])  );
 
-			localVariance = (  ( (globalMean * histogramIntensity[k]) - cumMeanArray[k] )  / 0.0000001 );
+		// ROS_INFO_STREAM("Divisor" << divisor);
 
+		if (divisor == 0)
+		{
+
+			localVariance = (((globalMean * histogramIntensity[k]) - cumMeanArray[k]) / 0.00001); // / 0.0000001 );
+																								  // localVariance = (  ( (globalMean * cumSumArray[k]) - cumMeanArray[k] ) /0.0001);		// / 0.0000001 );
 		}
-		else {
-			
-			localVariance = (  ( (globalMean * histogramIntensity[k]) - cumMeanArray[k] )  /  (  histogramIntensity[k]  * ( 1 - histogramIntensity[k] )  ) );
+		else
+		{
 
+			// localVariance = (  ( (globalMean * cumSumArray[k]) - cumMeanArray[k] )  /  (  cumSumArray[k] * ( 1 - cumSumArray[k] )  ) );
+
+			localVariance = (((globalMean * histogramIntensity[k]) - cumMeanArray[k]) / (histogramIntensity[k] * (1 - histogramIntensity[k])));
 		}
 
 		// localVariance = (  ( (globalMean * histogramIntensity[k]) - cumMeanArray[k] )  /  (  histogramIntensity[k]  * ( 1 - histogramIntensity[k] )  ) );
 
 		localVarianceArray[k] = localVariance;
-
 	}
-	
 
-	 // // to find the argmax of the array
+	thrIntensity = std::distance(localVarianceArray, std::max_element(localVarianceArray, localVarianceArray + maxIntensity));
 
-	// double min = *std::max_element(localVarianceArray,localVarianceArray+maxIntensity);
-
-	// std::cout << "LOCAL_VARIANCE " << min<< '\n';
-
-	// std::cout << "Index of max element: "<< std::distance(localVarianceArray, std::max_element(localVarianceArray,localVarianceArray+maxIntensity))<< std::endl;
-
-	thrIntensity =std::distance(localVarianceArray, std::max_element(localVarianceArray,localVarianceArray+maxIntensity));
-	
 	return thrIntensity;
-
-	}
-
-
-
-// 	/* 2 total mass moment + = strength * points */
-// 	double sumIntensity = 0.0;
-// 	for (int k = minIntensity; k <= maxIntensity; k++)
-// 	{
-// 		sumIntensity += (double)k * (double)histogramIntensity[k];
-// 	}
-
-// 	/* 3 traversal calculation */
-// 	double otsu = -1.0;
-// 	int w0 = 0;			  // The number of points less than or equal to the current threshold (number of previous scenic spots)
-// 	double sumFore = 0.0; // Foreground quality moment
-
-// 	unsigned int pcCount = cloud->size();
-// 	for (int k = minIntensity; k <= maxIntensity; k++)
-// 	{
-// 		w0 += histogramIntensity[k];
-
-// 		int w1 = pcCount - w0; //(the number of post-sites)
-// 		if (w0 == 0)
-// 			continue;
-// 		if (w1 == 0)
-// 			break;
-
-// 		sumFore += (double)k * histogramIntensity[k];
-
-// 		double u0 = sumFore / w0;									// The average gray level of the foreground
-// 		double u1 = (sumIntensity - sumFore) / w1;					// The average gray level of the background
-// 		double g = (double)w0 * (double)w1 * (u0 - u1) * (u0 - u1); // variance between classes
-
-// 		if (g > otsu)
-// 		{
-// 			otsu = g;
-// 			thrIntensity = k;
-// 		}
-// 	}
-
-// 	return thrIntensity;
-// }
-
+}
 
 /////////////////////
 void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr)
@@ -186,14 +141,15 @@ void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, 
 	{
 		ROS_INFO_STREAM("Intensity Before: " << it->intensity << std::endl);
 
-		if ((it->x) == 0){
+		if ((it->x) == 0)
+		{
 
 			continue;
 		}
 
 		modified_intensity = (it->intensity) * ((it->x) * (it->x) + (it->y) * (it->y)) * sqrt(4.0 + (it->x) * (it->x)) / (100.0 * abs(it->x));
 
-		ROS_INFO_STREAM("Intensity After: " <<  modified_intensity << std::endl);
+		ROS_INFO_STREAM("Intensity After: " << modified_intensity << std::endl);
 
 		if (1)
 		{
@@ -242,7 +198,7 @@ public:
 		THRESHOLD = OTSU(cloud);
 		ROS_INFO("Threshold: %d", THRESHOLD);
 
-		Filter(cloud, cloud_filtered, 2 * THRESHOLD);
+		Filter(cloud, cloud_filtered, THRESHOLD);
 		_velodyne_header = cloud_msg->header;
 
 		// Convert to ROS data type
