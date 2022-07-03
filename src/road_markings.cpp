@@ -29,12 +29,15 @@ double sepMeasure;
 
 std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
 
+// make ref constant value 
+
 unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
 	unsigned int thrIntensity = 1;
 
 	/* 1 Intensity histogram */
-	unsigned int histogramIntensity[256] = {0};
+	unsigned int histogramIntensity[256] {0};
+	// std::vector<unsigned int> histogramIntensity (256);
 	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values
 
 	int M = cloud->size();
@@ -66,7 +69,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	for (int k = 0; k <= maxIntensity; k++)
 	{
 		cumSum += (double)histogramIntensity[k]; // 	/pcCount;
-		cumSumArray[k] = double(cumSum);
+		cumSumArray[k] = static_cast<double>(cumSum);
 	}
 
 	double cumMean = 0.0;
@@ -166,7 +169,7 @@ void Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointC
 	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
 	{
 
-		if ((it->intensity > THRESHOLD) && (it->x > 0))
+		if ((it->intensity > THRESHOLD) && (( (it->x)*(it->x) + (it->y)*(it->y) ) < 300  ))
 		// if ((it->intensity < THRESHOLD) && (it->x > 0))
 		{
 			out_cloud_ptr->points.push_back(*it);
