@@ -16,6 +16,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <pcl/surface/concave_hull.h> 
+
 #include <algorithm>
 #include <typeinfo>
 #include <fstream>
@@ -23,21 +25,20 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 std_msgs::Header _velodyne_header;
 
-double sepMeasure;
+// double sepMeasure;
 
-std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
-
-// make ref constant value 
+// std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
 
 unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
 	unsigned int thrIntensity = 1;
 
 	/* 1 Intensity histogram */
-	unsigned int histogramIntensity[256] {0};
-	// std::vector<unsigned int> histogramIntensity (256);
+	unsigned int histogramIntensity[256] = {0};
 	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values
 
 	int M = cloud->size();
@@ -48,6 +49,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 
 		double modified_intensity = (it->intensity) * ((it->x) * (it->x) + (it->y) * (it->y)) * sqrt(4.0 + (it->x) * (it->x)) / (100.0 * abs(it->x));
 
+		
 		unsigned int vIntensity = it->intensity;
 
 		if (vIntensity > maxIntensity)
@@ -69,7 +71,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	for (int k = 0; k <= maxIntensity; k++)
 	{
 		cumSum += (double)histogramIntensity[k]; // 	/pcCount;
-		cumSumArray[k] = static_cast<double>(cumSum);
+		cumSumArray[k] = double(cumSum);
 	}
 
 	double cumMean = 0.0;
@@ -134,6 +136,176 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 }
 
 /////////////////////
+unsigned int OTSU_Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud){
+
+	int threshold = 0;
+	int cloudnumber = cloud->size();
+
+	/* 1 Intensity histogram */
+	vector<int> histogramIntensity (256, 0);
+	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values
+
+	int M = cloud->size();
+
+	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
+	{
+		// correct intensity to find corrected threshold
+
+		unsigned int vIntensity = it->intensity;
+
+		if (vIntensity > maxIntensity)
+		{
+			maxIntensity = vIntensity;
+		}
+		if (vIntensity < minIntensity)
+		{
+			minIntensity = vIntensity;
+		}
+		++histogramIntensity[vIntensity];
+	}
+
+	//OTSU Method
+
+	//Define Histogram
+	int N = 256;
+
+
+	float w0, w1, u0tmp, u1tmp, u0, u1, u, deltaTmp, deltaMax = 0;
+	for (int k = 0; k < N; k++)
+	{
+		w0 = w1 = u0tmp = u1tmp = u0 = u1 = u = deltaTmp = 0;
+
+		for (int t = 0; t < N; t++)
+		{
+			if (t <= k)
+			{
+				w0 += histogramIntensity[t];
+				u0tmp += t * histogramIntensity[t];
+			}
+			else     
+			{
+				w1 += histogramIntensity[t];
+				u1tmp += t * histogramIntensity[t];
+			}
+		}
+		u0 = u0tmp / w0;       
+		u1 = u1tmp / w1;     
+		u = u0tmp + u1tmp;    
+
+		deltaTmp = w0 * (u0 - u)*(u0 - u) + w1 * (u1 - u)*(u1 - u);
+
+		if (deltaTmp > deltaMax)
+		{
+			deltaMax = deltaTmp;
+			threshold = k;
+		}
+	}
+
+
+	return threshold;
+}
+/////////////////////
+unsigned int OTSU_default(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+{
+	unsigned int thrIntensity = 1;
+
+	/* 1 Intensity histogram */
+	unsigned int histogramIntensity[256] = {0};
+	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values
+
+	int M = cloud->size();
+
+	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
+	{
+		// correct intensity to find corrected threshold
+
+		unsigned int vIntensity = it->intensity;
+
+		if (vIntensity > maxIntensity)
+		{
+			maxIntensity = vIntensity;
+		}
+		if (vIntensity < minIntensity)
+		{
+			minIntensity = vIntensity;
+		}
+		++histogramIntensity[vIntensity];
+	}
+
+	/* 2 total mass moment + = strength * points */
+	double sumIntensity = 0.0;
+	for (int k = minIntensity; k <= maxIntensity; k++)
+	{
+		sumIntensity += (double)k * (double)histogramIntensity[k];
+	}
+
+	/* 3 traversal calculation */
+	double otsu = -1.0;
+	int w0 = 0;			  // The number of points less than or equal to the current threshold (number of previous scenic spots)
+	double sumFore = 0.0; // Foreground quality moment
+
+	unsigned int pcCount = cloud->size();
+	for (int k = minIntensity; k <= maxIntensity; k++)
+	{
+		w0 += histogramIntensity[k];
+
+		int w1 = pcCount - w0; //(the number of post-sites)
+		if (w0 == 0)
+			continue;
+		if (w1 == 0)
+			break;
+
+		sumFore += (double)k * histogramIntensity[k];
+
+		double u0 = sumFore / w0;									// The average gray level of the foreground
+		double u1 = (sumIntensity - sumFore) / w1;					// The average gray level of the background
+		double g = (double)w0 * (double)w1 * (u0 - u1) * (u0 - u1); // variance between classes
+
+		if (g > otsu)
+		{
+			otsu = g;
+			thrIntensity = k;
+		}
+	}
+
+	return thrIntensity;
+}
+
+/////////////////////
+pcl::PointCloud<pcl::PointXYZI> alphashape(const pcl::PointCloud<pcl::PointXYZI> &cloud, float alpha_value) //Concave Hull Generation
+{
+	pcl::PointCloud<pcl::PointXYZI> cloud_hull;
+	pcl::ConcaveHull<pcl::PointXYZI> chull;       
+	chull.setInputCloud(cloud.makeShared());       
+	chull.setAlpha(alpha_value);              
+	chull.reconstruct(cloud_hull);
+
+	// std::cout<< "Concave hull has: " << cloud_hull.points.size() << " data points." << endl;
+	return cloud_hull;
+}
+
+/////////////////////
+void BoundaryExtraction(const vector<pcl::PointCloud<pcl::PointXYZI>> &clouds, vector<pcl::PointCloud<pcl::PointXYZI>> &boundaryclouds, int down_rate, float alpha_value_scale)
+	{
+		boundaryclouds.resize(clouds.size());
+		int i;
+
+		for (i = 0; i < clouds.size(); i++)
+		{
+			boundaryclouds[i] = alphashape(clouds[i], 0.08*alpha_value_scale); //this is the parameter for alpha-shape, very important
+
+			pcl::PointCloud<pcl::PointXYZI>::Ptr tempcloud(new pcl::PointCloud<pcl::PointXYZI>);
+			for (int j = 0; j < boundaryclouds[i].points.size(); j++)
+			{
+				if (j % down_rate == 0)
+					tempcloud->points.push_back(boundaryclouds[i].points[j]);
+			}
+			tempcloud->points.swap(boundaryclouds[i].points);
+		}
+		cout << "Boundary Extraction Done" << endl;
+	}
+
+/////////////////////
 void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr)
 {
 	double modified_intensity;
@@ -169,13 +341,16 @@ void Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointC
 	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = in_cloud_ptr->begin(); it != in_cloud_ptr->end(); it++)
 	{
 
-		if ((it->intensity > THRESHOLD) && (( (it->x)*(it->x) + (it->y)*(it->y) ) < 300  ))
+		if ((it->intensity > THRESHOLD) && (( (it->x)*(it->x) + (it->y)*(it->y) ) < 800))
 		// if ((it->intensity < THRESHOLD) && (it->x > 0))
+		// if (it->intensity < THRESHOLD)
 		{
 			out_cloud_ptr->points.push_back(*it);
 		}
 	}
 }
+/////////////////////
+
 class SubscribeAndPublish
 {
 public:
@@ -191,17 +366,21 @@ public:
 	void callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 	{
 		pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+		// pcl::PointCloud<pcl::PointXYZI>::Ptr boundaryclouds(new pcl::PointCloud<pcl::PointXYZI>);
 		pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZI>);
 		pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_corrected(new pcl::PointCloud<pcl::PointXYZI>);
-
+		// pcl::PointCloud<pcl::PointXYZI> cloud_real(new pcl::PointCloud<pcl::PointXYZI>);
+		
 		pcl::fromROSMsg(*cloud_msg, *cloud);
 		// Correct_Intensity(cloud, cloud_corrected);
 
 		unsigned int THRESHOLD;
-		THRESHOLD = OTSU(cloud);
-		ROS_INFO("Threshold: %d", THRESHOLD);
+		// THRESHOLD = OTSU(cloud);
+		THRESHOLD = OTSU_default(cloud);
+		ROS_INFO("Threshold: %d", 2 * THRESHOLD);
 
-		Filter(cloud, cloud_filtered, THRESHOLD);
+		Filter(cloud, cloud_filtered, 2 * THRESHOLD);
+
 		_velodyne_header = cloud_msg->header;
 
 		// Convert to ROS data type
@@ -219,7 +398,7 @@ private:
 	ros::Publisher pub;
 	ros::Subscriber sub;
 };
-
+/////////////////////
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "road_markings");
