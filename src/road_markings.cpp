@@ -1,3 +1,40 @@
+/* Software License Agreement (MIT License)
+ *
+ *  Copyright (c) 2022-, Abdulbaasit Sanusi
+ *
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the copyright holder(s) nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+//include all necessary libraries
+
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -6,7 +43,6 @@
 #include "std_msgs/String.h"
 #include <cmath>
 #include <stdlib.h>
-
 #include <sensor_msgs/NavSatFix.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/convert.h>
@@ -15,9 +51,7 @@
 #include <string>
 #include <pcl_ros/point_cloud.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
 #include <pcl/surface/concave_hull.h> 
-
 #include <algorithm>
 #include <typeinfo>
 #include <fstream>
@@ -27,29 +61,40 @@
 
 using namespace std;
 
+
 std_msgs::Header _velodyne_header;
 
 // double sepMeasure;
 
-// std::vector<std::string> all_intensity_list; // list to save all intensity value in each iteration
 
+// vector to save all intensity value in each iteration
+std::vector<std::string> all_intensity_list; 
+
+
+/* OTSU segmentation Algorithm is implemented in this function.
+	Intensity correction and Normalization is initially carried 
+	before segmentation via OTSU.
+ */
 unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
 	unsigned int thrIntensity = 1;
 
-	/* 1 Intensity histogram */
+	/* Intializing an Intensity histogram to store all intensity values for each LIDAR scan  */
 	unsigned int histogramIntensity[256] = {0};
-	unsigned int maxIntensity = 0, minIntensity = 666666; // Maximum and minimum intensity values
+
+	unsigned int histCorrectedIntensity[256] = {0};
+
+	// Initializing Maximum and minimum intensity values
+	unsigned int maxIntensity = 0, minIntensity = 666666; 
 
 	int M = cloud->size();
 
+	double corrected_intensity = 0; 
+
+	// loop through all intensity values to in the histogram
 	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
 	{
-		// correct intensity to find corrected threshold
 
-		double modified_intensity = (it->intensity) * ((it->x) * (it->x) + (it->y) * (it->y)) * sqrt(4.0 + (it->x) * (it->x)) / (100.0 * abs(it->x));
-
-		
 		unsigned int vIntensity = it->intensity;
 
 		if (vIntensity > maxIntensity)
@@ -61,10 +106,50 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 			minIntensity = vIntensity;
 		}
 		++histogramIntensity[vIntensity];
+		
+		
+		// compute the corrected intensity
+
+		double R  = ((it->x) * (it->x) + (it->y) * (it->y));
+
+		double alpha = atan2(R, (it -> z));
+
+		double alpha_rad = alpha  * 3.14159/180;
+		
+		if (alpha < 60.0){
+			double R_ref = 4;
+			double corrected_intensity = ((it->intensity) * R / (R_ref * cos(alpha_rad)));
+		}
+
+		else if (alpha >  60.0 && alpha < 75.0){
+			double R_ref = 8;
+			double corrected_intensity = ((it->intensity) * R / (R_ref * cos(alpha_rad)));
+		}
+
+		else if (alpha >  75.0 && alpha < 90.0){
+			double R_ref = 8;
+			double corrected_intensity = ((it->intensity) * R / (R_ref * cos(alpha_rad)));
+		}
+
+
+		// if (corrected_intensity > maxIntensity)
+		// {
+		// 	maxIntensity = corrected_intensity;
+		// }
+		// if (corrected_intensity < minIntensity)
+		// {
+		// 	minIntensity = corrected_intensity;
+		// }
+		// ++histCorrectedIntensity[corrected_intensity];
 	}
 
+
+	//OTSU Implementation
+
+	// Variable to store the size of the cloud
 	unsigned int pcCount = cloud->size();
 
+	//initiali
 	double cumSum = 0.0;
 	double cumSumArray[maxIntensity] = {0};
 
