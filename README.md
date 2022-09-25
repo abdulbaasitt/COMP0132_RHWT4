@@ -19,10 +19,8 @@ To run this package, please
 
 * Install all dependencies - Libraries and ROS packages
 
-
-    - */gps/geopoint* (geographic_msgs/GeoPointStamped)
-    - Libraries -  OpenMP, PCL, g2o, suiteparse, geodesy, nmea_msgs. Please follow for instruction[Libraries] (https://github.com/koide3/hdl_graph_slam/blob/master/README.md)
-
+    - Libraries -  OpenMP, PCL, g2o, suiteparse, geodesy, nmea_msgs. Please follow [Libraries] for instruction (https://github.com/koide3/hdl_graph_slam/blob/master/README.md).
+    - Packages  - geodesy, nmea_msgs, pcl_ros, ndt_omp, fast_gicp, glog_catkin Please follow [packages] for instruction (https://github.com/koide3/hdl_graph_slam/blob/master/README.md).
 
 * Install the CloudCompare software, to visualise the map built using this package and also compare with the groundtruth map please follow: [CloudCompare](https://www.danielgm.net/cc/).
 
