@@ -75,6 +75,8 @@ std::vector<std::string> all_intensity_list;
 	Intensity correction and Normalization is initially carried 
 	before segmentation via OTSU.
  */
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 {
 	unsigned int thrIntensity = 1;
@@ -82,10 +84,15 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	/* Intializing an Intensity histogram to store all intensity values for each LIDAR scan  */
 	unsigned int histogramIntensity[256] = {0};
 
-	unsigned int histCorrectedIntensity[256] = {0};
+	vector<double> histCorrectedIntensity (256, 0);
+
+	// unsigned double histCorrectedIntensity[256] = {0};
 
 	// Initializing Maximum and minimum intensity values
 	unsigned int maxIntensity = 0, minIntensity = 666666; 
+
+	// Initiliazing Max and Min Corrected Intensity Value
+	double maxcorIntensity = 0.0, mincorIntensity = 10000000000.0; 
 
 	int M = cloud->size();
 
@@ -110,6 +117,8 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 		
 		// compute the corrected intensity
 
+		double corrected_intensity = 0; 
+
 		double R  = ((it->x) * (it->x) + (it->y) * (it->y));
 
 		double alpha = atan2(R, (it -> z));
@@ -132,15 +141,15 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 		}
 
 
-		// if (corrected_intensity > maxIntensity)
-		// {
-		// 	maxIntensity = corrected_intensity;
-		// }
-		// if (corrected_intensity < minIntensity)
-		// {
-		// 	minIntensity = corrected_intensity;
-		// }
-		// ++histCorrectedIntensity[corrected_intensity];
+		if (corrected_intensity > maxIntensity)
+		{
+			maxcorIntensity = corrected_intensity;
+		}
+		if (corrected_intensity < minIntensity)
+		{
+			mincorIntensity = corrected_intensity;
+		}
+		++histCorrectedIntensity[corrected_intensity];
 	}
 
 
@@ -149,78 +158,95 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	// Variable to store the size of the cloud
 	unsigned int pcCount = cloud->size();
 
-	//initiali
+	//Computing the cumulative sum
 	double cumSum = 0.0;
-	double cumSumArray[maxIntensity] = {0};
+	double cumSumArray[int(maxcorIntensity)] = {0};
 
-	for (int k = 0; k <= maxIntensity; k++)
+	for (int k = 0; k <= int(maxcorIntensity); k++)
 	{
-		cumSum += (double)histogramIntensity[k]; // 	/pcCount;
+		// Normalizing the Normalised corrected Intensity
+		cumSum += (double)histCorrectedIntensity[k]/pcCount;
 		cumSumArray[k] = double(cumSum);
 	}
 
+
+	// computing the cumulative mean till intensity value k
 	double cumMean = 0.0;
-	double cumMeanArray[maxIntensity] = {0};
-	for (int k = 0; k <= maxIntensity; k++)
+	double cumMeanArray[int(maxcorIntensity)] = {0};
+	for (int k = 0; k <= int(maxcorIntensity); k++)
 	{
-		cumMean += (double)k * ((double)histogramIntensity[k]); // 	/pcCount);
+		cumMean += (double)k * ((double)histCorrectedIntensity[k])/pcCount;
 		cumMeanArray[k] = double(cumMean);
 	}
 
+
+	// computing the total mean for all intensity values
 	double globalMean = 0.0;
 	double globalMeanArray[256] = {0};
 
 	for (int k = 0; k <= 255; k++)
 	{
-		globalMean += (double)k * ((double)histogramIntensity[k]); // /pcCount);
+		globalMean += (double)k * ((double)histCorrectedIntensity[k])/pcCount;
 		globalMeanArray[k] = double(globalMean);
 	}
 
+
+	// computing the total variance for all points in the array
 	double globalVar = 0.0;
 	double globalVarArray[256] = {0};
 
 	for (int k = 0; k <= 255; k++)
 	{
-		globalVar += (((double)k - globalMean) * ((double)k - globalMean) * ((double)histogramIntensity[k])); // /pcCount));
+		globalVar += (((double)k - globalMean) * ((double)k - globalMean) * ((double)histCorrectedIntensity[k]))/pcCount;
 		globalVarArray[k] = double(globalVar);
 	}
 
+	// computing the local variance for the roadmarking point class
 	double localVariance = 0.0;
-	double localVarianceArray[maxIntensity] = {0};
+	double localVarianceArray[int(maxcorIntensity)] = {0};
 
-	for (int k = 0; k <= maxIntensity; k++)
+	for (int k = 0; k <= int(maxcorIntensity); k++)
 	{
 
-		int divisor = (histogramIntensity[k] * (1 - histogramIntensity[k]));
-		// int divisor = (  cumSumArray[k]  * ( 1 - cumSumArray[k])  );
-
-		// ROS_INFO_STREAM("Divisor" << divisor);
+		int divisor = (histCorrectedIntensity[k] * (1 - histCorrectedIntensity[k]));
 
 		if (divisor == 0)
 		{
 
-			localVariance = (((globalMean * histogramIntensity[k]) - cumMeanArray[k]) / 0.00001); // / 0.0000001 );
-																								  // localVariance = (  ( (globalMean * cumSumArray[k]) - cumMeanArray[k] ) /0.0001);		// / 0.0000001 );
+			localVariance = (((globalMean * histCorrectedIntensity[k]) - cumMeanArray[k]) / 0.00001);
+																								
 		}
 		else
 		{
 
-			// localVariance = (  ( (globalMean * cumSumArray[k]) - cumMeanArray[k] )  /  (  cumSumArray[k] * ( 1 - cumSumArray[k] )  ) );
-
-			localVariance = (((globalMean * histogramIntensity[k]) - cumMeanArray[k]) / (histogramIntensity[k] * (1 - histogramIntensity[k])));
+			localVariance = (((globalMean * histCorrectedIntensity[k]) - cumMeanArray[k]) / (histCorrectedIntensity[k] * (1 - histCorrectedIntensity[k])));
 		}
 
-		// localVariance = (  ( (globalMean * histogramIntensity[k]) - cumMeanArray[k] )  /  (  histogramIntensity[k]  * ( 1 - histogramIntensity[k] )  ) );
 
 		localVarianceArray[k] = localVariance;
 	}
 
+	// selecting the threshold value
 	thrIntensity = std::distance(localVarianceArray, std::max_element(localVarianceArray, localVarianceArray + maxIntensity));
 
-	return thrIntensity;
+
+	// checking the separbility criterion
+	if (localVarianceArray[thrIntensity]/globalVar < 0.85){
+
+		thrIntensity = 2 * thrIntensity;
+		
+		return thrIntensity;
+	}
+
+	else if (localVarianceArray[thrIntensity]/globalVar > 0.85){
+		
+		return thrIntensity;
+
+	}
+	
 }
 
-/////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 unsigned int OTSU_Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud){
 
 	int threshold = 0;
@@ -356,41 +382,7 @@ unsigned int OTSU_default(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	return thrIntensity;
 }
 
-/////////////////////
-pcl::PointCloud<pcl::PointXYZI> alphashape(const pcl::PointCloud<pcl::PointXYZI> &cloud, float alpha_value) //Concave Hull Generation
-{
-	pcl::PointCloud<pcl::PointXYZI> cloud_hull;
-	pcl::ConcaveHull<pcl::PointXYZI> chull;       
-	chull.setInputCloud(cloud.makeShared());       
-	chull.setAlpha(alpha_value);              
-	chull.reconstruct(cloud_hull);
-
-	// std::cout<< "Concave hull has: " << cloud_hull.points.size() << " data points." << endl;
-	return cloud_hull;
-}
-
-/////////////////////
-void BoundaryExtraction(const vector<pcl::PointCloud<pcl::PointXYZI>> &clouds, vector<pcl::PointCloud<pcl::PointXYZI>> &boundaryclouds, int down_rate, float alpha_value_scale)
-	{
-		boundaryclouds.resize(clouds.size());
-		int i;
-
-		for (i = 0; i < clouds.size(); i++)
-		{
-			boundaryclouds[i] = alphashape(clouds[i], 0.08*alpha_value_scale); //this is the parameter for alpha-shape, very important
-
-			pcl::PointCloud<pcl::PointXYZI>::Ptr tempcloud(new pcl::PointCloud<pcl::PointXYZI>);
-			for (int j = 0; j < boundaryclouds[i].points.size(); j++)
-			{
-				if (j % down_rate == 0)
-					tempcloud->points.push_back(boundaryclouds[i].points[j]);
-			}
-			tempcloud->points.swap(boundaryclouds[i].points);
-		}
-		cout << "Boundary Extraction Done" << endl;
-	}
-
-/////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr)
 {
 	double modified_intensity;
@@ -418,7 +410,7 @@ void Correct_Intensity(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, 
 		}
 	}
 }
-///////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr out_cloud_ptr, unsigned int THRESHOLD)
 {
 	out_cloud_ptr->points.clear();
@@ -434,7 +426,7 @@ void Filter(const pcl::PointCloud<pcl::PointXYZI>::Ptr in_cloud_ptr, pcl::PointC
 		}
 	}
 }
-/////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class SubscribeAndPublish
 {
@@ -457,14 +449,14 @@ public:
 		// pcl::PointCloud<pcl::PointXYZI> cloud_real(new pcl::PointCloud<pcl::PointXYZI>);
 		
 		pcl::fromROSMsg(*cloud_msg, *cloud);
-		// Correct_Intensity(cloud, cloud_corrected);
 
 		unsigned int THRESHOLD;
-		// THRESHOLD = OTSU(cloud);
-		THRESHOLD = OTSU_default(cloud);
-		ROS_INFO("Threshold: %d", 2 * THRESHOLD);
+		THRESHOLD = OTSU(cloud);
+		// THRESHOLD = OTSU_default(cloud);
+		ROS_INFO("Threshold: %d", THRESHOLD);
 
-		Filter(cloud, cloud_filtered, 2 * THRESHOLD);
+		// Filter(cloud, cloud_filtered, 2 * THRESHOLD);
+		Filter(cloud, cloud_filtered, THRESHOLD);
 
 		_velodyne_header = cloud_msg->header;
 
@@ -483,7 +475,7 @@ private:
 	ros::Publisher pub;
 	ros::Subscriber sub;
 };
-/////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "road_markings");
