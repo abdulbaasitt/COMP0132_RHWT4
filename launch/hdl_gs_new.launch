@@ -2,12 +2,13 @@
 <launch>
 <!-- arguments -->
   <arg name="nodelet_manager" default="rslidar_nodelet_manager" />
-  <arg name="enable_imu_frontend" default="true" />
+  <arg name="enable_imu_frontend" default="false" />
   <arg name="enable_floor_detection" default="true" />
   <arg name="enable_gps" default="false" />
   <arg name="enable_imu_acc" default="false" />
   <arg name="enable_imu_ori" default="false" />
-  <arg name="points_topic" default="/rs16_tc/rslidar_points" />
+  <!-- <arg name="points_topic" default="/rs16_tc/rslidar_points" /> -->
+  <arg name="points_topic" default="/points_raw" />
   <arg name="imu_topic" default="imu/data" />
   <arg name="map_frame_id" default="psa_map" />
   <arg name="lidar_odom_frame_id" default="psa_map" />
@@ -26,8 +27,9 @@
     <remap from="msf_updates/transform_input" to="/scan_matching_odometry/transform" />
     <rosparam file="$(find hdl_graph_slam)/launch/msf_config.yaml"/>
   </node>
+
   <node pkg="rosservice" type="rosservice" name="initialize" args="call --wait /msf_lidar_scan_matching/pose_sensor/initialize_msf_scale 1"/>
-  
+
 <!-- prefiltering_nodelet -->
   <node pkg="nodelet" type="nodelet" name="prefiltering_nodelet" args="load hdl_graph_slam/PrefilteringNodelet $(arg nodelet_manager)">
     <remap from="/velodyne_points" to="$(arg points_topic)" />
@@ -50,34 +52,6 @@
     <param name="radius_radius" value="0.5" />
     <param name="radius_min_neighbors" value="2" />
   </node>
-
-  <!-- scan_matching_odometry_nodelet -->
-  <!--node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
-      <param name="points_topic" value="$(arg points_topic)" />
-      <param name="odom_frame_id" value="$(arg lidar_odom_frame_id)" />
-      <param name="robot_odom_frame_id" value="$(arg robot_odom_frame_id)" />
-      <param name="map_frame_id" value="map" />
-      <param name="keyframe_delta_trans" value="1.0" />
-      <param name="keyframe_delta_angle" value="1.0" />
-      <param name="keyframe_delta_time" value="10000.0" />
-      <param name="transform_thresholding" value="false" />
-      <param name="enable_robot_odometry_init_guess" value="$(arg enable_robot_odometry_init_guess)" />
-      <param name="max_acceptable_trans" value="1.0" />
-      <param name="max_acceptable_angle" value="1.0" />
-      <param name="downsample_method" value="NONE" />
-      <param name="downsample_resolution" value="0.1" /-->
-      <!-- ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP -->
-      <!--param name="registration_method" value="FAST_GICP" />
-      <param name="reg_num_threads" value="0" />
-      <param name="reg_transformation_epsilon" value="0.1"/>
-      <param name="reg_maximum_iterations" value="64"/>
-      <param name="reg_max_correspondence_distance" value="2.0"/>
-      <param name="reg_max_optimizer_iterations" value="20"/>
-      <param name="reg_use_reciprocal_correspondences" value="false"/>
-      <param name="reg_correspondence_randomness" value="20"/>
-      <param name="reg_resolution" value="1.0" />
-      <param name="reg_nn_search_method" value="DIRECT7" />
-  </node-->
   
   <!-- floor_detection_nodelet -->
   <node pkg="nodelet" type="nodelet" name="floor_detection_nodelet" args="load hdl_graph_slam/FloorDetectionNodelet $(arg nodelet_manager)" if="$(arg enable_floor_detection)">
@@ -94,6 +68,7 @@
 <node pkg="road_markings" type="road_markings" name="road_markings" output="screen">
     <param name="publish_frequency" type="double" value="10.0" />
     <remap from="/points_input" to="/floor_detection/floor_points" />
+    <!-- <remap from="/points_input" to="/points_raw" /> -->
 </node>
 
 <!-- calling the replace_floor node to replace floor points with road markings-->
@@ -182,5 +157,5 @@
     <param name="map_cloud_resolution" value="0.05" />
   </node>
   
-  <!--node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" /-->
+  <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" />
 </launch>

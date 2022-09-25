@@ -7,8 +7,6 @@
 
 
 
-
-
 ### Installation
 
 To run this package, please 
@@ -27,7 +25,8 @@ To run this package, please
 
 
 
-To install this package, clone the repository into the src folder of your workspace:  
+
+Install this package by clone the repository into the src folder of your workspace:  
 
 ```
 cd ../your_ws
@@ -37,8 +36,38 @@ cd ../your_ws
 git clone https://github.com/abdulbaasitt/road_markings.git
 ```
 
+Build and source the workspace 
+```
+catkin build
+```
+
 ```
 source devel/setup.bash
+
+```
+
+
+In another Terminal, launch the package using this command:
+
+```
+roslaunch road_markings hdl_gs_new.launch
+
+```
+
+
+Launch RVIZ and play the bag files contained in the dataset on [OneDrive]:
+
+```
+roscd hdl_graph_slam/rviz
+rviz -d hdl_graph_slam.rviz
+rosbag play --clock PSA_APM_8380_AIDE_TB2_TB3L1_WRK_X6_2021-09-03-11-07-08_0.bag
+
+```
+To build the a full map of the Area in the dataset. Please Run all the bags files in [OneDrive] and save the map built on RVIZ using:
+
+```
+ rosrun pcl_ros pointcloud_to_pcd input:=/hdl_graph_slam/map_points
+
 ```
 
 
@@ -46,7 +75,7 @@ source devel/setup.bash
 
 
 #### Datasets
-Find the dataset used for testing this package [OneDrive](https://1drv.ms/u/s!AlyJLAe_KcLYhYZ-hE4GSYI0GPUMVA?e=hZYrjl)
+Find the dataset(ROSbag files) used for testing this package [OneDrive](https://1drv.ms/u/s!AlyJLAe_KcLYhYZ-hE4GSYI0GPUMVA?e=hZYrjl)
 
 Note: to access this dataset. Kindly contact the author. The dataset is the IP of AIDrivers Ltd where this project was carried and requires explicit authorisation for use from AIDrivers LTD. 
 
