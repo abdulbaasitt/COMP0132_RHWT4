@@ -13,9 +13,17 @@
 
 To run this package, please 
 
+
+
 * Install the hdl\_graph\_slam package utilised for building the map and upon which the road marking extraction is integrated. Please follow for detail on how to install this package [hdl_graph_slam](https://github.com/koide3/hdl_graph_slam)
 
+* Install all dependencies - 
+
+    ** OpenMP, PCL, g2o, suiteparse, geodesy, nmea_msgs, 
+
 * Install the CloudCompare software, to visualise the map built using this package and also compare with the groundtruth map please follow: [CloudCompare](https://www.danielgm.net/cc/).
+
+
 
 
 To install this package, clone the repository into the src folder of your workspace:  
@@ -27,6 +35,12 @@ cd ../your_ws
 ```
 git clone https://github.com/abdulbaasitt/road_markings.git
 ```
+
+```
+source devel/setup.bash
+```
+
+
 
 
 
