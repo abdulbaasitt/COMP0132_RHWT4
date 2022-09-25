@@ -1,7 +1,7 @@
 # COMP0132 MSc Robotics and Computation Project
 ## 
 
-# Integrating Road Marking Extraction From LIDAR Intensity into HDL Graph SLAM Framework
+## Integrating Road Marking Extraction From LIDAR Intensity into HDL Graph SLAM Framework
 
 [**Road Marking Extraction Algorithm**](https://github.com/abdulbaasitt/road_markings) is a project focused on **Road Marking Extraction LIDAR Intensity Data using a Intensity Thresholding Method**  
 
