@@ -98,7 +98,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 
 	double corrected_intensity = 0; 
 
-	// loop through all intensity values to in the histogram
+	// loop through all intensity values to save in the histogram
 	for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud->begin(); it != cloud->end(); it++)
 	{
 
@@ -141,11 +141,11 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 		}
 
 
-		if (corrected_intensity > maxIntensity)
+		if (corrected_intensity > maxcorIntensity)
 		{
 			maxcorIntensity = corrected_intensity;
 		}
-		if (corrected_intensity < minIntensity)
+		if (corrected_intensity < mincorIntensity)
 		{
 			mincorIntensity = corrected_intensity;
 		}
@@ -164,7 +164,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 
 	for (int k = 0; k <= int(maxcorIntensity); k++)
 	{
-		// Normalizing the Normalised corrected Intensity
+		// Normalizing the corrected Intensity
 		cumSum += (double)histCorrectedIntensity[k]/pcCount;
 		cumSumArray[k] = double(cumSum);
 	}
@@ -227,7 +227,7 @@ unsigned int OTSU(const pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
 	}
 
 	// selecting the threshold value
-	thrIntensity = std::distance(localVarianceArray, std::max_element(localVarianceArray, localVarianceArray + maxIntensity));
+	thrIntensity = std::distance(localVarianceArray, std::max_element(localVarianceArray, localVarianceArray + int(maxcorIntensity)));
 
 
 	// checking the separbility criterion
