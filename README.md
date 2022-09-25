@@ -31,3 +31,4 @@
 
 
 ### Licence
+<!-- It is authored by [**Ahmed Adamjee**](https://www.linkedin.com/in/ahmedadamjee/) and is licensed under the [MIT License](https://github.com/ahmedadamji/selection_criteria/blob/main/LICENSE). -->
