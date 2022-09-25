@@ -3,27 +3,8 @@
 
 ## Integrating Road Marking Extraction From LIDAR Intensity into HDL Graph SLAM Framework
 
-[**Road Marking Extraction Algorithm**](https://github.com/abdulbaasitt/road_markings) is a project focused on **Road Marking Extraction LIDAR Intensity Data using a Intensity Thresholding Method**  
+[**Road Marking Extraction Algorithm**](https://github.com/abdulbaasitt/road_markings) is a project focused on **Road Marking Extraction from LIDAR Intensity Data using a Intensity Thresholding Method**  
 
-
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#about-the-project">About The Project</a>
-
-    <li><a href="#Installation">Installations</a></li>
-    <li><a href="#Datasets">Datasets</a>
-    <li><a href="#basic-usage">Basic Usage</a>
-    <li><a href="#structure-from-motion-with-colmap">Structure from Motion with COLMAP</a></li>
-    <li><a href="#semantic-segmentation-with-deeplab">Semantic Segmentation with DeepLab</a></li>
-    <li><a href="#planar-reconstruction">Planar Reconstruction</a></li>
-    <li><a href="#database-manipulation">Database Manipulation</a></li>
-    <li><a href="#licence">Licence</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
 
 
 
@@ -35,6 +16,17 @@ To run this package, please
 * Install the hdl\_graph\_slam package utilised for building the map and upon which the road marking extraction is integrated. Please follow for detail on how to install this package [hdl_graph_slam](https://github.com/koide3/hdl_graph_slam)
 
 * Install the CloudCompare software, to visualise the map built using this package and also compare with the groundtruth map please follow: [CloudCompare](https://www.danielgm.net/cc/).
+
+
+To install this package, clone the repository into the src folder of your workspace:  
+
+```
+cd ../your_ws
+```
+
+```
+git clone https://github.com/abdulbaasitt/road_markings.git
+```
 
 
 
