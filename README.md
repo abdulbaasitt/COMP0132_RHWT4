@@ -17,8 +17,8 @@ To run this package, please
 
 * Install all dependencies - Libraries and ROS packages
 
-    - Libraries -  OpenMP, PCL, g2o, suiteparse, geodesy, nmea_msgs. Please follow [Libraries] for instruction (https://github.com/koide3/hdl_graph_slam/blob/master/README.md).
-    - Packages  - geodesy, nmea_msgs, pcl_ros, ndt_omp, fast_gicp, glog_catkin Please follow [packages] for instruction (https://github.com/koide3/hdl_graph_slam/blob/master/README.md).
+    - Libraries -  OpenMP, PCL, g2o, suiteparse, geodesy, nmea_msgs. Please follow [Libraries](https://github.com/koide3/hdl_graph_slam/blob/master/README.md)for instruction.
+    - Packages  - geodesy, nmea_msgs, pcl_ros, ndt_omp, fast_gicp, glog_catkin Please follow [packages](https://github.com/koide3/hdl_graph_slam/blob/master/README.md) for instruction .
 
 * Install the CloudCompare software, to visualise the map built using this package and also compare with the groundtruth map please follow: [CloudCompare](https://www.danielgm.net/cc/).
 
@@ -74,7 +74,7 @@ To build the a full map of the Area in the dataset. Please Run all the bags file
 
 It is highly recommended to install AIOS to make the RVIZ visualization and running of the bag files easier.
 
-To Install AIOS, Please follow [AIOS] (https://3.basecamp.com/4075579/buckets/8792819/documents/3309446529)
+To Install AIOS, Please follow [AIOS](https://3.basecamp.com/4075579/buckets/8792819/documents/3309446529)
 
 
 #### Datasets
