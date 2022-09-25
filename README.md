@@ -70,8 +70,11 @@ To build the a full map of the Area in the dataset. Please Run all the bags file
 
 ```
 
+### Recommendations
 
+It is highly recommended to install AIOS to make the RVIZ visualization and running of the bag files easier.
 
+To Install AIOS, Please follow [AIOS] (https://3.basecamp.com/4075579/buckets/8792819/documents/3309446529)
 
 
 #### Datasets
@@ -81,3 +84,8 @@ Note: to access this dataset. Kindly contact the author. The dataset is the IP o
 
 ### Licence
 This project is authored by Abdulbaasit Sanusi and is licensed under the [MIT License](https://github.com/abdulbaasitt/road_markings/blob/main/LICENCE).
+
+### Enquires
+
+Please contact the author via the emails providedbelow for any enquiries recagarding the running of this package:
+Email: [abdulbaasitsanusi@gmail.com](mailto:abdulbaasitsanusi@gmail.com); [abdulbaasit.sanusi.21@ucl.ac.uk](mailto:abdulbaasit.sanusi.21@ucl.ac.uk)
