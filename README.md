@@ -27,6 +27,12 @@
 
 ## Installation
 
+To run this package, please 
+
+* Install the hdl\_graph\_slam package utilised for building the map and upon which the road marking extraction is integrated. The [hdl_graph_slam](https://github.com/koide3/hdl_graph_slam)
+
+* To install The hdl\_graph\_slam package for utilising the supplied launch files for creating a map with integrated nodes for selection criteria, please follow: [hdl_graph_slam](https://github.com/koide3/hdl_graph_slam).  
+
 
 
 
