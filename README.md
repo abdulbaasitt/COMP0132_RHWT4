@@ -46,7 +46,6 @@ source devel/setup.bash
 
 ```
 
-
 In another Terminal, launch the package using this command:
 
 ```
@@ -84,10 +83,11 @@ Note: to access this dataset. Kindly contact the author. The dataset is the IP o
 
 ### Evaluation 
 
+To Evaluate, Segment the ground truth map to include on the area contained in the bag files from the [Dataset](https://1drv.ms/u/s!AlyJLAe_KcLYhYZ-hE4GSYI0GPUMVA?e=hZYrjl),
+ 
+ Align the map obtained using this package with the ground truth map using [cloudcompare](https://www.danielgm.net/cc/)
 
-
-
-
+ Save the two maps as Images and use the [Evaluation](https://github.com/abdulbaasitt/road_markings/blob/main/Evaluation%20Scripts/Metrics_thresh.ipynb) to compare. 
 
 
 ### Licence
